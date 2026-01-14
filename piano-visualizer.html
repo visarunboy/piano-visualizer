@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Piano Visualizer – F • Eb • Db • Eb</title>
+  <style>
+    :root{
+      --bg0:#0a0f1a;
+      --glass: rgba(255,255,255,.10);
+      --glass2: rgba(255,255,255,.16);
+      --stroke: rgba(255,255,255,.18);
+      --txt: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.70);
+      --accent: rgba(120,200,255,.85);
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--txt);
+      background:
+        radial-gradient(1200px 800px at 20% 10%, rgba(120,200,255,.18), transparent 55%),
+        radial-gradient(900px 700px at 85% 25%, rgba(255,140,220,.14), transparent 55%),
+        radial-gradient(900px 900px at 55% 90%, rgba(120,255,200,.10), transparent 60%),
+        linear-gradient(180deg, #060911 0%, #060a12 35%, #05060b 100%);
+      overflow:hidden;
+    }
+
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-columns: 1fr 360px;
+      gap:16px;
+      padding:16px;
+    }
+
+    /* Liquid glass cards */
+    .glass{
+      background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.06));
+      border: 1px solid var(--stroke);
+      border-radius: 24px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      position:relative;
+      overflow:hidden;
+    }
+    .glass::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(700px 240px at 15% 20%, rgba(255,255,255,.16), transparent 60%),
+        radial-gradient(500px 280px at 80% 10%, rgba(255,255,255,.10), transparent 60%),
+        radial-gradient(600px 260px at 60% 110%, rgba(255,255,255,.08), transparent 70%);
+      pointer-events:none;
+      filter: blur(0px);
+    }
+
+    /* Main piano stage */
+    .stage{
+      display:flex;
+      flex-direction:column;
+      min-width: 860px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 16px;
+    }
+    .brand{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .brand b{font-size:14px; letter-spacing:.3px}
+    .brand span{font-size:12px; color:var(--muted)}
+    .controls{
+      display:flex; align-items:center; gap:10px;
+    }
+
+    button{
+      border:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(255,255,255,.16), rgba(255,255,255,.08));
+      color:var(--txt);
+      padding:10px 14px;
+      border-radius: 14px;
+      cursor:pointer;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: transform .08s ease, background .2s ease, border-color .2s ease;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      user-select:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      font-weight:600;
+      letter-spacing:.2px;
+    }
+    button:active{transform: translateY(1px) scale(.99)}
+    button.primary{
+      border-color: rgba(120,200,255,.35);
+      background: linear-gradient(180deg, rgba(120,200,255,.22), rgba(255,255,255,.08));
+    }
+    .pill{
+      font-size:12px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.08);
+      color:var(--muted);
+      display:flex; gap:8px; align-items:center;
+    }
+    .dot{
+      width:8px; height:8px; border-radius:999px;
+      background: rgba(255,255,255,.35);
+      box-shadow: 0 0 12px rgba(255,255,255,.15);
+    }
+    .dot.on{
+      background: rgba(120,255,200,.85);
+      box-shadow: 0 0 18px rgba(120,255,200,.50);
+    }
+
+    /* Piano body */
+    .pianoWrap{
+      padding:14px;
+      margin:14px;
+      border-radius: 28px;
+      position:relative;
+      min-height: 520px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    /* "Blüthner Lucid iDyllic Excellence" vibe (inspired, not a replica) */
+    .pianoBody{
+      position:relative;
+      border-radius: 26px;
+      border:1px solid rgba(255,255,255,.18);
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.05)),
+        radial-gradient(1200px 600px at 50% 30%, rgba(255,255,255,.06), transparent 60%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 25px 80px rgba(0,0,0,.45);
+      overflow:hidden;
+      padding:18px 18px 14px 18px;
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+    }
+
+    .lidLine{
+      height:46px;
+      border-radius: 20px;
+      background: linear-gradient(90deg, rgba(255,255,255,.10), rgba(255,255,255,.05));
+      border:1px solid rgba(255,255,255,.14);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 16px;
+      overflow:hidden;
+      position:relative;
+    }
+    .lidLine .logo{
+      font-weight:800;
+      letter-spacing: 1.2px;
+      font-size:13px;
+      opacity:.9;
+      text-transform:uppercase;
+    }
+    .lidLine .sub{
+      font-size:12px;
+      color:var(--muted);
+      letter-spacing:.2px;
+    }
+
+    /* Bokeh canvas inside body */
+    #bokeh{
+      position:absolute;
+      inset:0;
+      z-index:0;
+      filter: blur(6px) saturate(160%);
+      opacity:.0;
+      transition: opacity .35s ease;
+      mix-blend-mode: screen;
+    }
+    .pianoBody.playing #bokeh{opacity:.95}
+
+    /* Keyboard area */
+    .keyboardArea{
+      position:relative;
+      z-index:2;
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.18);
+      padding:14px 14px 18px 14px;
+      overflow-x:auto;
+      overflow-y:hidden;
+    }
+    .keyboard{
+      position:relative;
+      height: 260px;
+      min-width: 2200px; /* big, feels like full keyboard */
+      user-select:none;
+    }
+
+    /* White keys */
+    .white{
+      position:absolute;
+      bottom:0;
+      width: 34px;
+      height: 240px;
+      border-radius: 0 0 10px 10px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.90), rgba(255,255,255,.72));
+      border:1px solid rgba(0,0,0,.12);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.85),
+        inset 0 -14px 24px rgba(0,0,0,.06),
+        0 12px 24px rgba(0,0,0,.25);
+      transition: transform .06s ease, filter .12s ease, box-shadow .12s ease;
+    }
+    .white.active{
+      filter: brightness(1.05) saturate(1.1);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.85),
+        inset 0 -14px 24px rgba(0,0,0,.10),
+        0 0 0 2px rgba(120,200,255,.30),
+        0 18px 34px rgba(0,0,0,.25);
+      transform: translateY(1px);
+    }
+
+    /* Black keys */
+    .black{
+      position:absolute;
+      bottom: 96px;
+      width: 22px;
+      height: 150px;
+      border-radius: 0 0 9px 9px;
+      background:
+        linear-gradient(180deg, rgba(30,34,44,.96), rgba(5,6,10,.96));
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.12),
+        inset 0 -14px 22px rgba(0,0,0,.55),
+        0 10px 22px rgba(0,0,0,.55);
+      z-index: 5;
+      transition: transform .06s ease, box-shadow .12s ease;
+    }
+    .black.active{
+      box-shadow:
+        inset 0 1px 0 rgba(255,255,255,.16),
+        inset 0 -14px 22px rgba(0,0,0,.60),
+        0 0 0 2px rgba(255,140,220,.28),
+        0 14px 26px rgba(0,0,0,.55);
+      transform: translateY(1px);
+    }
+
+    .noteTag{
+      position:absolute;
+      left:50%;
+      transform: translateX(-50%);
+      bottom: 10px;
+      font-size:10px;
+      color: rgba(0,0,0,.55);
+      letter-spacing:.2px;
+      opacity:.0;
+      transition: opacity .18s ease;
+      pointer-events:none;
+      text-shadow: 0 1px 0 rgba(255,255,255,.4);
+    }
+    .keyboardArea.showLabels .noteTag{opacity:.85}
+    .black .noteTag{
+      color: rgba(255,255,255,.72);
+      bottom: 8px;
+      opacity:.0;
+    }
+    .keyboardArea.showLabels .black .noteTag{opacity:.8}
+
+    /* Right panel */
+    .panel{
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:14px;
+      min-width: 320px;
+    }
+    .panel h3{
+      margin:4px 4px 0 4px;
+      font-size:14px;
+      letter-spacing:.2px;
+    }
+    .panel p{
+      margin:0 4px 6px 4px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.35;
+    }
+
+    textarea{
+      width:100%;
+      min-height: 240px;
+      resize: vertical;
+      padding:12px 12px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.18);
+      background: rgba(255,255,255,.08);
+      color: var(--txt);
+      outline:none;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size:12px;
+      line-height:1.35;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.10);
+    }
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+      margin-top:8px;
+    }
+    label{
+      display:flex; gap:8px; align-items:center;
+      color:var(--muted);
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.06);
+      user-select:none;
+      cursor:pointer;
+    }
+    input[type="checkbox"]{
+      accent-color: rgba(120,200,255,.9);
+    }
+
+    .small{
+      font-size:12px;
+      color:var(--muted);
+      padding:10px 12px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.10);
+    }
+
+    @media (max-width: 1100px){
+      body{overflow:auto}
+      .app{grid-template-columns: 1fr; min-height: 100%;}
+      .stage{min-width: unset}
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- LEFT: Piano -->
+    <div class="stage glass">
+      <div class="topbar">
+        <div class="brand">
+          <b>Piano Visualizer</b>
+          <span>Loop • подсветка клавиш • liquid glass + bokeh в корпусе</span>
+        </div>
+        <div class="controls">
+          <div class="pill"><span class="dot" id="statusDot"></span><span id="statusText">Ready</span></div>
+          <button class="primary" id="playBtn">▶︎ Play</button>
+          <button id="stopBtn">⏹ Stop</button>
+        </div>
+      </div>
+
+      <div class="pianoWrap glass" style="margin:0 14px 14px 14px;">
+        <div class="pianoBody" id="pianoBody">
+          <canvas id="bokeh"></canvas>
+
+          <div class="lidLine">
+            <div class="logo">BLÜTHNER • LUCID iDYLLIC</div>
+            <div class="sub">Top view • “glass” aesthetic</div>
+          </div>
+
+          <div class="keyboardArea" id="keyboardArea">
+            <div class="keyboard" id="keyboard"></div>
+          </div>
+
+          <div class="small" id="nowPlaying">
+            Сейчас: <b id="npNote">—</b> • темп: <b id="npTempo">120</b> BPM • длительность шага: <b id="npStep">1/4</b>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Programming panel -->
+    <div class="panel glass">
+      <h3>Окошко для программирования нот</h3>
+      <p>
+        Формат: <code>NOTE OCTAVE : DURATION</code> (duration в долях такта).<br/>
+        Пример: <code>F4:1/4  Eb4:1/4  Db4:1/4  Eb4:1/4</code><br/>
+        Разрешены диезы/бемоли: <code>F#4</code> или <code>Eb4</code>.
+      </p>
+
+      <textarea id="seqInput"></textarea>
+
+      <div class="row">
+        <button id="applyBtn">Apply</button>
+        <button id="tapBtn">Tap Tempo</button>
+        <label><input type="checkbox" id="labelsChk" /> Подписи нот</label>
+      </div>
+
+      <div class="small">
+        <div style="margin-bottom:6px;"><b>Подсказки</b></div>
+        • Можно вводить переносы строк — не важно.<br/>
+        • Если duration не указана, берётся 1/4.<br/>
+        • Темп влияет на скорость лупа (по умолчанию 120 BPM).<br/>
+        • По клику на клавишу можно “прозвучать” ноту.
+      </div>
+
+      <div class="small">
+        <div style="margin-bottom:6px;"><b>Темп (BPM)</b></div>
+        <input id="bpm" type="range" min="40" max="220" value="120" style="width:100%;">
+        <div style="display:flex; justify-content:space-between; color:var(--muted); font-size:12px;">
+          <span>40</span><span id="bpmVal">120</span><span>220</span>
+        </div>
+      </div>
+
+      <div class="small" id="errors" style="display:none; border-color: rgba(255,120,120,.35);">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /***********************
+     * Helpers: notes <-> MIDI <-> frequency
+     ***********************/
+    const NOTE_TO_SEMITONE = {
+      "C":0, "C#":1, "Db":1, "D":2, "D#":3, "Eb":3, "E":4,
+      "F":5, "F#":6, "Gb":6, "G":7, "G#":8, "Ab":8, "A":9,
+      "A#":10, "Bb":10, "B":11
+    };
+
+    function midiToFreq(midi){
+      // A4=440 at MIDI 69
+      return 440 * Math.pow(2, (midi - 69) / 12);
+    }
+
+    function noteNameToMidi(noteName){
+      // Accept e.g. "Eb4", "F#3", "C4"
+      const m = noteName.trim().match(/^([A-Ga-g])([#b]?)(-?\d+)$/);
+      if(!m) return null;
+      const letter = m[1].toUpperCase();
+      const accidental = m[2] || "";
+      const octave = parseInt(m[3], 10);
+      const key = letter + accidental;
+      if(!(key in NOTE_TO_SEMITONE)) return null;
+
+      // MIDI formula: C-1 = 0, so C4 = 60
+      const semitone = NOTE_TO_SEMITONE[key];
+      return (octave + 1) * 12 + semitone;
+    }
+
+    function midiToNoteName(midi){
+      const names = ["C","C#","D","Eb","E","F","F#","G","Ab","A","Bb","B"];
+      const octave = Math.floor(midi/12) - 1;
+      const name = names[midi % 12];
+      return `${name}${octave}`;
+    }
+
+    function parseDurationToken(tok){
+      // "1/4" or "1/8" etc. Returns fraction of whole note in beats? We'll map to "bars" fraction.
+      // We'll interpret as fraction of a bar in 4/4: 1/4 = quarter note (one beat), 1/8 = eighth.
+      const m = tok.match(/^(\d+)\s*\/\s*(\d+)$/);
+      if(!m) return null;
+      const a = parseInt(m[1],10);
+      const b = parseInt(m[2],10);
+      if(!b) return null;
+      return a / b;
+    }
+
+    /***********************
+     * Sequence parsing
+     ***********************/
+    function parseSequence(text){
+      // tokens like "F4:1/4" or "Eb4" separated by whitespace/newlines
+      const raw = text
+        .replace(/[,\|]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      if(!raw) return { events: [], errors: ["Пустая последовательность."] };
+
+      const parts = raw.split(" ").filter(Boolean);
+      const events = [];
+      const errors = [];
+
+      for(const p of parts){
+        const [noteTok, durTok] = p.split(":");
+        const note = noteTok.trim();
+        const midi = noteNameToMidi(note);
+        if(midi === null){
+          errors.push(`Не понял ноту: "${noteTok}" (пример: Eb4, F#3, C4)`);
+          continue;
+        }
+        let dur = 1/4; // default quarter
+        if(durTok && durTok.trim().length){
+          const d = parseDurationToken(durTok.trim());
+          if(d === null){
+            errors.push(`Не понял длительность: "${durTok}" (пример: 1/4, 1/8)`);
+          } else {
+            dur = d;
+          }
+        }
+        events.push({ note, midi, dur });
+      }
+
+      if(events.length === 0 && errors.length === 0){
+        errors.push("Не удалось распарсить ни одной ноты.");
+      }
+      return { events, errors };
+    }
+
+    /***********************
+     * Audio (WebAudio)
+     ***********************/
+    let audioCtx = null;
+    let master = null;
+
+    function ensureAudio(){
+      if(audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      master = audioCtx.createGain();
+      master.gain.value = 0.7;
+      master.connect(audioCtx.destination);
+    }
+
+    function playTone(freq, durationSec){
+      // Simple synth: sine + subtle second harmonic, with short attack/release
+      const now = audioCtx.currentTime;
+
+      const osc1 = audioCtx.createOscillator();
+      osc1.type = "sine";
+      osc1.frequency.value = freq;
+
+      const osc2 = audioCtx.createOscillator();
+      osc2.type = "triangle";
+      osc2.frequency.value = freq * 2;
+
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.35, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + Math.max(0.03, durationSec * 0.92));
+
+      // gentle filter
+      const f = audioCtx.createBiquadFilter();
+      f.type = "lowpass";
+      f.frequency.value = 2800;
+      f.Q.value = 0.6;
+
+      osc1.connect(f);
+      osc2.connect(f);
+      f.connect(g);
+      g.connect(master);
+
+      osc1.start(now);
+      osc2.start(now);
+      osc1.stop(now + durationSec);
+      osc2.stop(now + durationSec);
+
+      return { stop: ()=>{ try{osc1.stop(); osc2.stop();}catch(e){} } };
+    }
+
+    /***********************
+     * Keyboard rendering (88 keys)
+     ***********************/
+    const keyboardEl = document.getElementById("keyboard");
+    const keyboardArea = document.getElementById("keyboardArea");
+    const keyByMidi = new Map();
+
+    // 88-key piano: A0 (21) to C8 (108)
+    const MIDI_START = 21;
+    const MIDI_END   = 108;
+
+    const WHITE_W = 34;
+
+    function isBlack(midi){
+      const pc = midi % 12;
+      // black key pitch classes: 1,3,6,8,10
+      return pc===1 || pc===3 || pc===6 || pc===8 || pc===10;
+    }
+
+    function buildKeyboard(){
+      keyboardEl.innerHTML = "";
+      keyByMidi.clear();
+
+      // Compute white key index positions
+      let whiteIndex = 0;
+      for(let m = MIDI_START; m <= MIDI_END; m++){
+        if(!isBlack(m)){
+          const x = whiteIndex * WHITE_W;
+          const el = document.createElement("div");
+          el.className = "white";
+          el.style.left = x + "px";
+          el.dataset.midi = m;
+          const tag = document.createElement("div");
+          tag.className = "noteTag";
+          tag.textContent = midiToNoteName(m);
+          el.appendChild(tag);
+
+          el.addEventListener("pointerdown", () => auditionKey(m));
+          keyboardEl.appendChild(el);
+          keyByMidi.set(m, el);
+
+          whiteIndex++;
+        }
+      }
+
+      // Now place black keys relative to white keys
+      // Mapping within an octave from white positions:
+      // C (0), D(2), E(4), F(5), G(7), A(9), B(11)
+      // Black keys sit between: C-D, D-E, F-G, G-A, A-B
+      function whitePosForMidi(midi){
+        // count whites from start to midi inclusive
+        let count = 0;
+        for(let mm = MIDI_START; mm <= midi; mm++){
+          if(!isBlack(mm)) count++;
+        }
+        return count - 1; // index
+      }
+
+      for(let m = MIDI_START; m <= MIDI_END; m++){
+        if(isBlack(m)){
+          // Place black key between adjacent whites; we can approximate:
+          // Use the previous white key position and offset
+          const prevWhite = whitePosForMidi(m - 1);
+          const x = prevWhite * WHITE_W + (WHITE_W - 11); // slight right shift
+          const el = document.createElement("div");
+          el.className = "black";
+          el.style.left = x + "px";
+          el.dataset.midi = m;
+
+          const tag = document.createElement("div");
+          tag.className = "noteTag";
+          tag.textContent = midiToNoteName(m);
+          el.appendChild(tag);
+
+          el.addEventListener("pointerdown", () => auditionKey(m));
+          keyboardEl.appendChild(el);
+          keyByMidi.set(m, el);
+        }
+      }
+
+      // width
+      keyboardEl.style.width = (whiteIndex * WHITE_W) + "px";
+    }
+
+    function setKeyActive(midi, active){
+      const el = keyByMidi.get(midi);
+      if(!el) return;
+      el.classList.toggle("active", active);
+    }
+
+    /***********************
+     * Playback scheduler (loop)
+     ***********************/
+    let seq = [];
+    let isPlaying = false;
+    let playTimer = null;
+    let currentIndex = 0;
+
+    const pianoBody = document.getElementById("pianoBody");
+    const statusDot = document.getElementById("statusDot");
+    const statusText = document.getElementById("statusText");
+    const npNote = document.getElementById("npNote");
+    const bpmRange = document.getElementById("bpm");
+    const bpmVal = document.getElementById("bpmVal");
+    const npTempo = document.getElementById("npTempo");
+    const npStep = document.getElementById("npStep");
+
+    function quarterSec(){
+      const bpm = parseInt(bpmRange.value, 10);
+      return 60 / bpm;
+    }
+
+    function durToSeconds(durFrac){
+      // durFrac is fraction of bar in 4/4: 1/4=one beat => quarterSec
+      // beats = durFrac * 4
+      const beats = durFrac * 4;
+      return beats * quarterSec();
+    }
+
+    function updateStatus(){
+      statusDot.classList.toggle("on", isPlaying);
+      statusText.textContent = isPlaying ? "Playing" : "Ready";
+      pianoBody.classList.toggle("playing", isPlaying);
+      npTempo.textContent = bpmRange.value;
+    }
+
+    function clearAllHighlights(){
+      for(const [m, el] of keyByMidi.entries()){
+        el.classList.remove("active");
+      }
+    }
+
+    function scheduleNext(){
+      if(!isPlaying || seq.length === 0) return;
+
+      const ev = seq[currentIndex];
+      const sec = durToSeconds(ev.dur);
+
+      // audio
+      const freq = midiToFreq(ev.midi);
+      playTone(freq, Math.max(0.06, sec * 0.95));
+
+      // visuals
+      clearAllHighlights();
+      setKeyActive(ev.midi, true);
+      npNote.textContent = `${ev.note} (MIDI ${ev.midi})`;
+
+      // bokeh reacts a bit
+      bokehPulse();
+
+      currentIndex = (currentIndex + 1) % seq.length;
+
+      // schedule
+      playTimer = setTimeout(scheduleNext, sec * 1000);
+    }
+
+    function start(){
+      ensureAudio();
+      audioCtx.resume?.();
+      if(seq.length === 0) return;
+
+      isPlaying = true;
+      currentIndex = 0;
+      updateStatus();
+      scheduleNext();
+    }
+
+    function stop(){
+      isPlaying = false;
+      updateStatus();
+      if(playTimer) clearTimeout(playTimer);
+      playTimer = null;
+      clearAllHighlights();
+      npNote.textContent = "—";
+    }
+
+    /***********************
+     * Click audition
+     ***********************/
+    function auditionKey(midi){
+      ensureAudio();
+      audioCtx.resume?.();
+
+      const sec = 0.25;
+      playTone(midiToFreq(midi), sec);
+
+      clearAllHighlights();
+      setKeyActive(midi, true);
+      setTimeout(()=> setKeyActive(midi, false), 160);
+      bokehPulse();
+    }
+
+    /***********************
+     * Bokeh canvas (blurred colorful circles inside piano body)
+     ***********************/
+    const bokeh = document.getElementById("bokeh");
+    const ctx = bokeh.getContext("2d");
+    let circles = [];
+    let pulse = 0;
+
+    function resizeBokeh(){
+      const r = pianoBody.getBoundingClientRect();
+      bokeh.width = Math.floor(r.width * devicePixelRatio);
+      bokeh.height = Math.floor(r.height * devicePixelRatio);
+      bokeh.style.width = r.width + "px";
+      bokeh.style.height = r.height + "px";
+      ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
+    }
+
+    function initCircles(){
+      circles = [];
+      const r = pianoBody.getBoundingClientRect();
+      const n = 22;
+      for(let i=0;i<n;i++){
+        circles.push({
+          x: Math.random()*r.width,
+          y: Math.random()*r.height,
+          r: 60 + Math.random()*160,
+          vx: (-0.22 + Math.random()*0.44),
+          vy: (-0.16 + Math.random()*0.32),
+          hue: Math.random()*360,
+          a: 0.06 + Math.random()*0.09
+        });
+      }
+    }
+
+    function bokehPulse(){
+      pulse = Math.min(1, pulse + 0.35);
+    }
+
+    function drawBokeh(){
+      const r = pianoBody.getBoundingClientRect();
+      ctx.clearRect(0,0,r.width,r.height);
+
+      const intensity = isPlaying ? (0.55 + pulse*0.45) : 0.15;
+
+      // soft vignette
+      const grd = ctx.createRadialGradient(r.width*0.5, r.height*0.52, 40, r.width*0.5, r.height*0.52, Math.max(r.width,r.height)*0.75);
+      grd.addColorStop(0, `rgba(255,255,255,0.00)`);
+      grd.addColorStop(1, `rgba(0,0,0,0.22)`);
+      ctx.fillStyle = grd;
+      ctx.fillRect(0,0,r.width,r.height);
+
+      for(const c of circles){
+        c.x += c.vx * (isPlaying ? 1.8 : 1.0);
+        c.y += c.vy * (isPlaying ? 1.8 : 1.0);
+        c.hue = (c.hue + (isPlaying ? 0.28 : 0.12)) % 360;
+
+        if(c.x < -200) c.x = r.width + 200;
+        if(c.x > r.width + 200) c.x = -200;
+        if(c.y < -200) c.y = r.height + 200;
+        if(c.y > r.height + 200) c.y = -200;
+
+        const alpha = c.a * intensity;
+        ctx.beginPath();
+        ctx.fillStyle = `hsla(${c.hue}, 90%, 65%, ${alpha})`;
+        ctx.arc(c.x, c.y, c.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      // decay pulse
+      pulse *= 0.86;
+      requestAnimationFrame(drawBokeh);
+    }
+
+    window.addEventListener("resize", () => {
+      resizeBokeh();
+      initCircles();
+    });
+
+    /***********************
+     * UI wiring
+     ***********************/
+    const seqInput = document.getElementById("seqInput");
+    const applyBtn = document.getElementById("applyBtn");
+    const playBtn = document.getElementById("playBtn");
+    const stopBtn = document.getElementById("stopBtn");
+    const errorsBox = document.getElementById("errors");
+    const labelsChk = document.getElementById("labelsChk");
+    const tapBtn = document.getElementById("tapBtn");
+
+    function setErrors(list){
+      if(!list || list.length===0){
+        errorsBox.style.display = "none";
+        errorsBox.textContent = "";
+        return;
+      }
+      errorsBox.style.display = "block";
+      errorsBox.innerHTML = "<b>Ошибки парсинга</b><br/>" + list.map(s => "• " + s).join("<br/>");
+    }
+
+    function applySequence(){
+      const { events, errors } = parseSequence(seqInput.value);
+      setErrors(errors);
+
+      if(events.length){
+        seq = events;
+        // show step as the first duration token
+        const first = events[0]?.dur ?? (1/4);
+        // render 1/x nice
+        const asFrac = (d) => {
+          // common values
+          const common = [
+            [1/1,"1/1"],[1/2,"1/2"],[1/4,"1/4"],[1/8,"1/8"],[1/16,"1/16"],
+            [3/8,"3/8"],[3/16,"3/16"]
+          ];
+          for(const [v,s] of common){ if(Math.abs(v-d) < 1e-9) return s; }
+          return d.toFixed(3);
+        };
+        npStep.textContent = asFrac(first);
+
+        if(isPlaying){
+          stop();
+          start();
+        }
+      }
+    }
+
+    // Default sequence: F – Eb – Db – Eb (loop)
+    seqInput.value = "F4:1/4  Eb4:1/4  Db4:1/4  Eb4:1/4";
+
+    applyBtn.addEventListener("click", applySequence);
+    playBtn.addEventListener("click", () => {
+      applySequence();
+      if(seq.length) start();
+    });
+    stopBtn.addEventListener("click", stop);
+
+    bpmRange.addEventListener("input", () => {
+      bpmVal.textContent = bpmRange.value;
+      npTempo.textContent = bpmRange.value;
+    });
+
+    labelsChk.addEventListener("change", () => {
+      keyboardArea.classList.toggle("showLabels", labelsChk.checked);
+    });
+
+    // Tap tempo
+    let tapTimes = [];
+    tapBtn.addEventListener("click", () => {
+      const t = performance.now();
+      tapTimes.push(t);
+      if(tapTimes.length > 8) tapTimes.shift();
+      if(tapTimes.length >= 4){
+        const diffs = [];
+        for(let i=1;i<tapTimes.length;i++) diffs.push(tapTimes[i]-tapTimes[i-1]);
+        const avg = diffs.reduce((a,b)=>a+b,0)/diffs.length;
+        const bpm = Math.round(60000/avg);
+        bpmRange.value = Math.min(220, Math.max(40, bpm));
+        bpmVal.textContent = bpmRange.value;
+        npTempo.textContent = bpmRange.value;
+      }
+    });
+
+    /***********************
+     * Init
+     ***********************/
+    buildKeyboard();
+    resizeBokeh();
+    initCircles();
+    drawBokeh();
+    applySequence();
+    updateStatus();
+  </script>
+</body>
+</html>
