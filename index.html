@@ -905,6 +905,7 @@
      ***********************/
     let keyboardMode = false;
     let keyboardOctaveShift = 0; // in octaves, applied to KEYBOARD_MAP MIDI (12 semitones)
+    const activeKeyboardNotes = new Map(); // key -> { midi, voice }
     const KEYBOARD_MAP = new Map([
       // Common “piano” layout (C4 .. E5)
       ["a", 60], // C4
@@ -945,6 +946,14 @@
     }
 
     function setKeyboardMode(on){
+      if(!on){
+        // Release all currently held computer-keyboard notes
+        for(const [k, rec] of activeKeyboardNotes.entries()){
+          try{ rec.voice?.stop?.(); }catch(e){}
+          setKeyActive(rec.midi, false);
+        }
+        activeKeyboardNotes.clear();
+      }
       keyboardMode = !!on;
       updateKeyboardModeUI();
     }
@@ -962,12 +971,29 @@
         e.preventDefault();
         return;
       }
-      const midi = KEYBOARD_MAP.get(key);
-      if(midi == null) return;
+      const baseMidi = KEYBOARD_MAP.get(key);
+      if(baseMidi == null) return;
+      if(activeKeyboardNotes.has(key)) return; // already held
 
+      const midi = baseMidi + keyboardOctaveShift * 12;
       e.preventDefault();
-      auditionKey(midi + keyboardOctaveShift * 12);
+      ensureAudio();
+      audioCtx.resume?.();
+
+      // Long-ish note, will be stopped on keyup
+      const voice = playTone(midiToFreq(midi), 5.0);
+      setKeyActive(midi, true);
+      activeKeyboardNotes.set(key, { midi, voice });
     }, { passive: false });
+
+    window.addEventListener("keyup", (e) => {
+      const key = (e.key || "").toLowerCase();
+      const rec = activeKeyboardNotes.get(key);
+      if(!rec) return;
+      try{ rec.voice?.stop?.(); }catch(err){}
+      setKeyActive(rec.midi, false);
+      activeKeyboardNotes.delete(key);
+    });
 
     kbdBtn.addEventListener("click", () => setKeyboardMode(!keyboardMode));
     updateKeyboardModeUI();
