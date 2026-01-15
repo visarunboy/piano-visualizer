@@ -23,6 +23,7 @@ Runs **100% in the browser** — no frameworks, no build step.
 ## 🚀 Demo
 
 Just open the HTML file in your browser.
+Or open the live demo: https://visarunboy.github.io/piano-visualizer/
 
 > Audio will start **only after user interaction** (browser autoplay policy).
 
