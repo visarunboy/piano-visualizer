@@ -1,7 +1,7 @@
 # 🎹 Piano Visualizer
 
 **Liquid-glass piano visualizer** in the browser with looping playback, glowing key highlights, editable note sequences, and bokeh color flows inside the piano body.  
-Inspired by modern iOS “liquid glass” aesthetics and a top-down grand piano view.
+Inspired by modern iOS “liquid glass” aesthetics.
 
 ---
 
